@@ -1,0 +1,345 @@
+---
+import type { FrameworkDef } from "../data/frameworks";
+
+interface Props {
+    frameworks: FrameworkDef[];
+}
+
+const { frameworks } = Astro.props;
+const frameworkLangMap = Object.fromEntries(frameworks.map((f) => [f.id, f.language]));
+---
+
+<div
+    class="flex items-center px-6 py-2 sticky top-0 z-20 w-full backdrop-blur border-b border-[var(--border-secondary)] whitespace-nowrap gap-8"
+    style="background: color-mix(in srgb, var(--bg-surface) 80%, transparent)"
+    id="framework-selector"
+    data-framework-langs={JSON.stringify(frameworkLangMap)}
+>
+    <button
+        id="sidebar-toggle"
+        class="lg:hidden text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+        aria-label="Toggle sidebar"
+    >
+        <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+        >
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+    <div class="hidden md:flex items-center gap-1.5 shrink-0">
+        <button
+            class="lang-filter flex items-center rounded border p-1.5 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer border-blue-500 sel-text-on"
+            data-lang="python"
+            title="Python"
+        >
+            <img src="/lang/python.svg" alt="Python" class="w-4 h-4" />
+        </button>
+        <button
+            class="lang-filter flex items-center rounded border p-1.5 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer border-blue-500 sel-text-on"
+            data-lang="typescript"
+            title="TypeScript"
+        >
+            <img src="/lang/typescript.svg" alt="TypeScript" class="w-4 h-4" />
+        </button>
+    </div>
+    <div class="flex items-center gap-2 overflow-x-auto min-w-0 ml-auto">
+        {
+            frameworks.map((framework) => (
+                <button
+                    class="framework-toggle text-sm flex-shrink-0 rounded border px-3 py-1 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] transition-all flex items-center gap-1.5 sel-border-off sel-text-off opacity-60 cursor-pointer"
+                    data-framework-id={framework.id}
+                    data-framework-lang={framework.language}
+                >
+                    <img
+                        src={framework.logoPath}
+                        alt=""
+                        class:list={[
+                            "w-4 h-4 object-contain flex-shrink-0",
+                            framework.logoStyle && "invert-on-dark",
+                        ]}
+                        style={framework.logoStyle}
+                    />
+                    <span class="flex-shrink-0">{framework.name}</span>
+                </button>
+            ))
+        }
+    </div>
+</div>
+
+<script>
+    let selectionOrder: string[] = [];
+    let originalOrder: string[] = [];
+    type SelectorRuntimeState = Window & { __agentPartyLangs?: string[] };
+
+    function getFrameworkLangMap(): Record<string, string> {
+        const el = document.getElementById("framework-selector");
+        return JSON.parse(el?.dataset.frameworkLangs || "{}");
+    }
+
+    function getActiveLangs(): Set<string> {
+        const active = new Set<string>();
+        document
+            .querySelectorAll<HTMLButtonElement>(".lang-filter")
+            .forEach((btn) => {
+                if (btn.classList.contains("border-blue-500"))
+                    active.add(btn.dataset.lang!);
+            });
+        return active;
+    }
+
+    function getVisibleFrameworks(): Set<string> {
+        const langMap = getFrameworkLangMap();
+        const activeLangs = getActiveLangs();
+        return new Set(
+            Object.entries(langMap)
+                .filter(([, lang]) => activeLangs.has(lang))
+                .map(([id]) => id),
+        );
+    }
+
+    function styleBtn(btn: HTMLButtonElement, isSelected: boolean) {
+        btn.classList.toggle("border-blue-500", isSelected);
+        btn.classList.toggle("sel-text-on", isSelected);
+        btn.classList.toggle("sel-border-off", !isSelected);
+        btn.classList.toggle("sel-text-off", !isSelected);
+        btn.classList.toggle("opacity-60", !isSelected);
+    }
+
+    function reorderButtons() {
+        const container =
+            document.querySelector<HTMLElement>(".framework-toggle")?.parentElement;
+        if (!container) return;
+
+        const selected = new Set(selectionOrder);
+        const sorted = [
+            ...selectionOrder,
+            ...originalOrder.filter((id) => !selected.has(id)),
+        ];
+
+        for (const id of sorted) {
+            const btn = container.querySelector<HTMLButtonElement>(
+                `.framework-toggle[data-framework-id="${id}"]`,
+            );
+            if (btn) container.appendChild(btn);
+        }
+    }
+
+    function reorderSnippets() {
+        document
+            .querySelectorAll<HTMLElement>(".snippet-grid")
+            .forEach((grid) => {
+                const selected = new Set(selectionOrder);
+                const sorted = [
+                    ...selectionOrder,
+                    ...originalOrder.filter((id) => !selected.has(id)),
+                ];
+                for (const id of sorted) {
+                    const el = grid.querySelector<HTMLElement>(
+                        `[data-framework="${id}"]`,
+                    );
+                    if (el) grid.appendChild(el);
+                }
+            });
+    }
+
+    function applyState() {
+        const visible = getVisibleFrameworks();
+        const selected = new Set(selectionOrder);
+
+        document
+            .querySelectorAll<HTMLButtonElement>(".framework-toggle")
+            .forEach((btn) => {
+                const id = btn.dataset.frameworkId!;
+                btn.style.display = visible.has(id) ? "" : "none";
+                styleBtn(btn, selected.has(id));
+            });
+
+        reorderButtons();
+        reorderSnippets();
+
+        const activeFrameworks = new Set(
+            selectionOrder.filter((id) => visible.has(id)),
+        );
+        document.querySelectorAll<HTMLElement>("[data-framework]").forEach((el) => {
+            el.style.display = activeFrameworks.has(el.dataset.framework!) ? "" : "none";
+        });
+
+        document
+            .querySelectorAll<HTMLElement>("section[id]")
+            .forEach((section) => {
+                const hasVisible = Array.from(
+                    section.querySelectorAll<HTMLElement>("[data-framework]"),
+                ).some((el) => el.style.display !== "none");
+                section.style.display = hasVisible ? "" : "none";
+            });
+
+        const hasSelection = selectionOrder.length > 0;
+        const noVisibleSelection = activeFrameworks.size === 0;
+        const emptyState = document.getElementById("empty-state");
+        if (emptyState) emptyState.style.display = noVisibleSelection ? "" : "none";
+        const categoryHeader = document.getElementById("category-header");
+        if (categoryHeader)
+            categoryHeader.style.display = hasSelection ? "" : "none";
+        const bottomNav = document.getElementById("bottom-nav");
+        if (bottomNav) bottomNav.style.display = hasSelection ? "" : "none";
+
+        // Adjust sidebar breakpoint
+        // Classes: xl:sticky xl:translate-x-0 xl:hidden (ensure Tailwind compiles them)
+        const wide = selectionOrder.length < 2;
+        const sidebar = document.getElementById("sidebar");
+        const sidebarToggle = document.getElementById("sidebar-toggle");
+        if (sidebar && sidebarToggle) {
+            if (!hasSelection) {
+                sidebar.style.display = "none";
+                sidebarToggle.style.display = "none";
+            } else {
+                sidebar.style.display = "";
+                sidebarToggle.style.display = "";
+                const from = wide ? "xl" : "lg";
+                const to = wide ? "lg" : "xl";
+                sidebar.classList.replace(`${from}:sticky`, `${to}:sticky`);
+                sidebar.classList.replace(
+                    `${from}:translate-x-0`,
+                    `${to}:translate-x-0`,
+                );
+                sidebarToggle.classList.replace(
+                    `${from}:hidden`,
+                    `${to}:hidden`,
+                );
+            }
+        }
+
+        document
+            .querySelectorAll<HTMLElement>(".snippet-grid")
+            .forEach((grid) => {
+                grid.classList.toggle("lg:grid-cols-2", !wide);
+            });
+
+        // Persist
+        const url = new URL(window.location.href);
+        if (selectionOrder.length > 0) {
+            url.searchParams.set("f", selectionOrder.join("-"));
+        } else {
+            url.searchParams.delete("f");
+        }
+        history.replaceState({}, "", url.toString());
+        document.dispatchEvent(new CustomEvent("framework-filter-changed"));
+        localStorage.setItem(
+            "agent-party-selected",
+            JSON.stringify(selectionOrder),
+        );
+        (window as SelectorRuntimeState).__agentPartyLangs = [...getActiveLangs()];
+    }
+
+    function toggleFramework(frameworkId: string) {
+        const idx = selectionOrder.indexOf(frameworkId);
+        if (idx >= 0) {
+            selectionOrder.splice(idx, 1);
+        } else {
+            selectionOrder.push(frameworkId);
+        }
+        applyState();
+    }
+
+    function toggleLang(lang: string) {
+        const btn = document.querySelector<HTMLButtonElement>(
+            `.lang-filter[data-lang="${lang}"]`,
+        );
+        if (!btn) return;
+        const isActive = btn.classList.contains("border-blue-500");
+        btn.classList.toggle("border-blue-500", !isActive);
+        btn.classList.toggle("sel-text-on", !isActive);
+        btn.classList.toggle("sel-border-off", isActive);
+        btn.classList.toggle("sel-text-off", isActive);
+        btn.classList.toggle("opacity-60", isActive);
+        applyState();
+    }
+
+    function init() {
+        originalOrder = Array.from(
+            document.querySelectorAll<HTMLButtonElement>(".framework-toggle"),
+        ).map((btn) => btn.dataset.frameworkId!);
+
+        if (window.location.pathname === "/") {
+            delete (window as SelectorRuntimeState).__agentPartyLangs;
+        }
+
+        const runtimeLangs = (window as SelectorRuntimeState).__agentPartyLangs;
+        if (runtimeLangs !== undefined) {
+            const langs = new Set(runtimeLangs);
+            document
+                .querySelectorAll<HTMLButtonElement>(".lang-filter")
+                .forEach((btn) => {
+                    const lang = btn.dataset.lang!;
+                    const isActive = langs.has(lang);
+                    btn.classList.toggle("border-blue-500", isActive);
+                    btn.classList.toggle("sel-text-on", isActive);
+                    btn.classList.toggle("sel-border-off", !isActive);
+                    btn.classList.toggle("sel-text-off", !isActive);
+                    btn.classList.toggle("opacity-60", !isActive);
+                });
+        }
+
+        // Restore framework selection order
+        const url = new URL(window.location.href);
+        const fromUrl = url.searchParams.get("f");
+        const fromStorage = localStorage.getItem("agent-party-selected");
+        if (fromUrl) {
+            selectionOrder = fromUrl
+                .split("-")
+                .filter((id) => originalOrder.includes(id));
+        } else if (fromStorage) {
+            try {
+                const arr = JSON.parse(fromStorage) as string[];
+                selectionOrder = arr.filter((id) => originalOrder.includes(id));
+            } catch {}
+        } else {
+            selectionOrder = [];
+        }
+
+        applyState();
+
+        const hash = window.location.hash.slice(1);
+        if (hash) {
+            const section = document.getElementById(hash);
+            if (section) {
+                section.scrollIntoView();
+                const h2 = section.querySelector("h2");
+                const target = h2 || section;
+                target.classList.remove("flash-highlight");
+                void target.offsetWidth;
+                target.classList.add("flash-highlight");
+            }
+        }
+    }
+
+    function setup() {
+        if (!document.getElementById("framework-selector")) return;
+
+        document
+            .querySelectorAll<HTMLButtonElement>(".framework-toggle")
+            .forEach((btn) => {
+                btn.addEventListener("click", () =>
+                    toggleFramework(btn.dataset.frameworkId!),
+                );
+            });
+        document
+            .querySelectorAll<HTMLButtonElement>(".lang-filter")
+            .forEach((btn) => {
+                btn.addEventListener("click", () =>
+                    toggleLang(btn.dataset.lang!),
+                );
+            });
+        init();
+    }
+
+    setup();
+    document.addEventListener("astro:after-swap", setup);
+</script>

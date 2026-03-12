@@ -1,0 +1,198 @@
+---
+import { categories, categoryUrl } from "../data/categories";
+
+interface Props {
+  currentSlug?: string;
+}
+
+const { currentSlug } = Astro.props;
+---
+
+<!-- Mobile overlay -->
+<div
+  id="sidebar-overlay"
+  class="fixed inset-0 z-30 bg-black/50 hidden xl:hidden"
+></div>
+
+<!-- Sidebar -->
+<aside
+  id="sidebar"
+  class="fixed lg:sticky top-0 z-30 h-screen w-60 shrink-0 border-r border-[var(--border-primary)] overflow-y-auto bg-[var(--bg-sidebar)] -translate-x-full lg:translate-x-0 transition-transform duration-200"
+>
+  <nav class="pt-14 pb-4 pl-4 pr-2">
+    <ul class="space-y-1">
+      {
+        categories.map((cat) => (
+          <li>
+            <a
+              href={categoryUrl(cat.slug)}
+              class:list={[
+                "block py-1.5 px-3 rounded text-sm",
+                cat.slug === currentSlug
+                  ? "bg-[var(--bg-surface-hover)] text-[var(--text-primary)] font-medium"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]",
+              ]}
+            >
+              {cat.title}
+            </a>
+            {cat.slug === currentSlug && (
+              <ul class="mt-1 mb-1 space-y-0.5">
+                {cat.scenarios.map((scenario) => {
+                  const anchor = scenario.slug.replace(/^\d+-/, "");
+                  return (
+                    <li>
+                      <a
+                        href={`${categoryUrl(cat.slug)}#${anchor}`}
+                        class="block py-1 pl-6 pr-3 text-xs text-[var(--text-faint)] hover:text-[var(--text-secondary)] rounded sidebar-scenario-link"
+                        data-scenario={anchor}
+                      >
+                        {scenario.title}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</aside>
+
+<script>
+  function syncSidebarLinks() {
+    document.querySelectorAll<HTMLAnchorElement>("#sidebar a").forEach((link) => {
+      const baseHref = link.dataset.baseHref || link.getAttribute("href") || "";
+      if (!link.dataset.baseHref) link.dataset.baseHref = baseHref;
+      link.setAttribute("href", withCurrentFilter(baseHref));
+    });
+  }
+
+  function withCurrentFilter(rawHref: string): string {
+    if (!rawHref.startsWith("/")) return rawHref;
+    const current = new URL(window.location.href);
+    const target = new URL(rawHref, window.location.origin);
+    const f = current.searchParams.get("f");
+    if (f) target.searchParams.set("f", f);
+    else target.searchParams.delete("f");
+    return `${target.pathname}${target.search}${target.hash}`;
+  }
+
+  function setupSidebar() {
+    const toggle = document.getElementById("sidebar-toggle");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+
+    if (!toggle || !sidebar || !overlay) return;
+
+    syncSidebarLinks();
+
+    function openSidebar() {
+      sidebar!.classList.remove("-translate-x-full");
+      sidebar!.classList.add("translate-x-0");
+      overlay!.classList.remove("hidden");
+    }
+
+    function closeSidebar() {
+      sidebar!.classList.add("-translate-x-full");
+      sidebar!.classList.remove("translate-x-0");
+      overlay!.classList.add("hidden");
+    }
+
+    toggle.addEventListener("click", () => {
+      const isOpen = !sidebar.classList.contains("-translate-x-full");
+      if (isOpen) closeSidebar();
+      else openSidebar();
+    });
+
+    overlay.addEventListener("click", closeSidebar);
+
+    // Preserve framework filter in sidebar navigation links
+    // and close sidebar on mobile after click.
+    sidebar.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        const baseHref = link.dataset.baseHref || link.getAttribute("href") || "";
+        link.setAttribute("href", withCurrentFilter(baseHref));
+        closeSidebar();
+      });
+    });
+
+    // Flash-highlight section when clicking a scenario link
+    sidebar.querySelectorAll<HTMLAnchorElement>(".sidebar-scenario-link").forEach((link) => {
+      link.addEventListener("click", () => {
+        const id = link.dataset.scenario;
+        if (!id) return;
+        requestAnimationFrame(() => {
+          const section = document.getElementById(id);
+          if (!section) return;
+          const h2 = section.querySelector("h2");
+          const target = h2 || section;
+          target.classList.remove("flash-highlight");
+          void target.offsetWidth;
+          target.classList.add("flash-highlight");
+        });
+      });
+    });
+  }
+
+  let sectionObserver: IntersectionObserver | null = null;
+
+  function setupSectionHighlight() {
+    if (sectionObserver) sectionObserver.disconnect();
+
+    const links = document.querySelectorAll<HTMLAnchorElement>(".sidebar-scenario-link");
+    if (!links.length) return;
+
+    const visibleSections = new Set<string>();
+
+    function updateHighlight() {
+      // Pick the first visible section in DOM order
+      const sections = document.querySelectorAll<HTMLElement>("section[id]");
+      let activeSlug: string | null = null;
+      for (const section of sections) {
+        if (visibleSections.has(section.id) && section.style.display !== "none") {
+          activeSlug = section.id;
+          break;
+        }
+      }
+
+      links.forEach((link) => {
+        const isActive = link.dataset.scenario === activeSlug;
+        link.classList.toggle("sidebar-scenario-active", isActive);
+      });
+    }
+
+    sectionObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visibleSections.add(entry.target.id);
+          } else {
+            visibleSections.delete(entry.target.id);
+          }
+        }
+        updateHighlight();
+      },
+      { rootMargin: "-80px 0px -60% 0px" }
+    );
+
+    document.querySelectorAll<HTMLElement>("section[id]").forEach((section) => {
+      sectionObserver!.observe(section);
+    });
+  }
+
+  const sidebarEvents = window as Window & { __sidebarFilterEventsBound?: boolean };
+  if (!sidebarEvents.__sidebarFilterEventsBound) {
+    document.addEventListener("framework-filter-changed", syncSidebarLinks);
+    window.addEventListener("popstate", syncSidebarLinks);
+    sidebarEvents.__sidebarFilterEventsBound = true;
+  }
+
+  setupSidebar();
+  setupSectionHighlight();
+  document.addEventListener("astro:after-swap", () => {
+    setupSidebar();
+    setupSectionHighlight();
+  });
+</script>

@@ -1,0 +1,32 @@
+---
+import { getCollection } from "astro:content";
+import { categories } from "../data/categories";
+import Layout from "../layouts/Layout.astro";
+import CategoryPage from "../components/CategoryPage.astro";
+
+export function getStaticPaths() {
+  return categories.slice(1).map((cat, i) => ({
+    params: { category: cat.slug },
+    props: {
+      category: cat,
+      prevCategory: categories[i],
+      nextCategory: categories[i + 2] || categories[0],
+    },
+  }));
+}
+
+const { category, prevCategory, nextCategory } = Astro.props;
+const allSnippets = await getCollection("snippets");
+const categorySnippets = allSnippets.filter(
+  (s) => s.data.categorySlug === category.contentSlug,
+);
+---
+
+<Layout currentCategory={category.slug}>
+  <CategoryPage
+    category={category}
+    snippets={categorySnippets}
+    prevCategory={prevCategory}
+    nextCategory={nextCategory}
+  />
+</Layout>

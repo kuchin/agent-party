@@ -1,0 +1,18 @@
+---
+interface Props {
+  language: "typescript" | "python";
+}
+
+const { language } = Astro.props;
+
+const config = {
+  typescript: { label: "TypeScript", class: "badge-ts" },
+  python: { label: "Python", class: "badge-py" },
+};
+
+const c = config[language];
+---
+
+<span class:list={["text-xs px-2 py-0.5 rounded-full", c.class]}>
+  {c.label}
+</span>

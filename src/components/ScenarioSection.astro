@@ -1,0 +1,37 @@
+---
+import SnippetCard from "./SnippetCard.astro";
+import EmptySnippet from "./EmptySnippet.astro";
+import type { FrameworkDef } from "../data/frameworks";
+import type { Scenario } from "../data/categories";
+
+interface SnippetFile {
+  filename: string;
+  language: string;
+  code: string;
+}
+
+interface Props {
+  scenario: Scenario;
+  snippetsByFramework: Record<string, SnippetFile[]>;
+  frameworks: FrameworkDef[];
+}
+
+const { scenario, snippetsByFramework, frameworks } = Astro.props;
+const anchor = scenario.slug.replace(/^\d+-/, "");
+---
+
+<section class="mb-12 scroll-mt-14" id={anchor}>
+  <h2 class="text-lg font-semibold mb-4 text-[var(--text-secondary)]">{scenario.title}</h2>
+  <div class="snippet-grid grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
+    {
+      frameworks.map((framework) => {
+        const files = snippetsByFramework[framework.id];
+        return files ? (
+          <SnippetCard framework={framework} files={files} />
+        ) : (
+          <EmptySnippet framework={framework} />
+        );
+      })
+    }
+  </div>
+</section>

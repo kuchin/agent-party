@@ -1,0 +1,34 @@
+MCP: Tools on a server, not in the agent
+=========================================
+
+Before (e.g. the Tools section):
+
+  Agent process
+  ├── tools = [get_weather, ...]   ← defined here
+  └── agent.run("question")        ← called here
+
+
+After (MCP):
+
+  Agent (client.py)              MCP Server (server.py)
+  ┌──────────────┐   stdio/http   ┌──────────────────┐
+  │              │◄──────────────►│                  │
+  │  tools = ?   │   1. connect   │  list_employees  │
+  │              │───────────────►│  get_employee    │
+  │              │   2. discover  │                  │
+  │              │◄───────────────│  (tool schemas)  │
+  │              │                │                  │
+  │  LLM call ───┼── 3. call ────►│  execute tool    │
+  │              │◄───────────────│  return result   │
+  │              │                │                  │
+  │  LLM call ───┼── 4. call ────►│  execute tool    │
+  │              │◄───────────────│  return result   │
+  │              │                │                  │
+  │  response    │   5. done      │                  │
+  └──────────────┘                └──────────────────┘
+
+Why this matters:
+• Server ships independently — no agent redeploy when tools change
+• One server serves many agents — any MCP client can connect
+• Agent discovers tools at runtime — no hardcoded tool list
+• Tools can live behind auth, in different languages, on different machines

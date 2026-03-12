@@ -1,0 +1,112 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { frameworks } from "../data/frameworks";
+
+const pythonFrameworks = frameworks.filter((f) => f.language === "python");
+const typescriptFrameworks = frameworks.filter((f) => f.language === "typescript");
+---
+
+<Layout>
+    <div class="max-w-2xl mx-auto px-6 py-12">
+        <h1 class="text-2xl font-bold mb-6">About</h1>
+
+        <div class="space-y-4 text-[var(--text-secondary)] text-sm leading-relaxed">
+            <p>
+                Agent Party is a side-by-side comparison of AI agent framework
+                syntax. It helps developers quickly see how the same agent
+                pattern looks across different frameworks.
+            </p>
+
+            <p>Currently covering:</p>
+
+            <ul class="list-none space-y-2 pl-4">
+                <li>
+                    <span class="text-[var(--text-muted)]">Python:</span>{" "}
+                    <span class="inline-flex flex-wrap items-center gap-3 align-middle">
+                        {
+                            pythonFrameworks.map((framework) => (
+                                <a
+                                    href={framework.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1.5 text-[var(--text-primary)] hover:text-blue-400"
+                                >
+                                    <img
+                                        src={framework.logoPath}
+                                        alt=""
+                                        class:list={[
+                                            "w-3.5 h-3.5 object-contain",
+                                            framework.logoStyle && "invert-on-dark",
+                                        ]}
+                                        style={framework.logoStyle}
+                                    />
+                                    <span>{framework.name}</span>
+                                </a>
+                            ))
+                        }
+                    </span>
+                </li>
+                <li>
+                    <span class="text-[var(--text-muted)]">TypeScript:</span>{" "}
+                    <span class="inline-flex flex-wrap items-center gap-3 align-middle">
+                        {
+                            typescriptFrameworks.map((framework) => (
+                                <a
+                                    href={framework.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1.5 text-[var(--text-primary)] hover:text-blue-400"
+                                >
+                                    <img
+                                        src={framework.logoPath}
+                                        alt=""
+                                        class:list={[
+                                            "w-3.5 h-3.5 object-contain",
+                                            framework.logoStyle && "invert-on-dark",
+                                        ]}
+                                        style={framework.logoStyle}
+                                    />
+                                    <span>{framework.name}</span>
+                                </a>
+                            ))
+                        }
+                    </span>
+                </li>
+            </ul>
+
+            <p>
+                Each pattern shows minimal, runnable code. When a framework
+                doesn't support a pattern natively, we show the idiomatic
+                workaround.
+            </p>
+
+            <p class="pt-4 mt-8 border-t border-[var(--border-primary)]">
+                Inspired by{" "}
+                <a
+                    href="https://component-party.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-400 hover:underline">Component Party</a
+                >{" "}
+                and{" "}
+                <a
+                    href="https://orm-party.fkey.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-400 hover:underline">ORM Party</a
+                >
+            </p>
+
+            <p>
+                Built by Dima Kuchin at{" "}
+                <a
+                    href="https://mirable.io"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-400 hover:underline">Mirable</a
+                >
+            </p>
+
+        </div>
+    </div>
+</Layout>

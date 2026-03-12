@@ -1,0 +1,116 @@
+---
+import { categoryUrl, type Category } from "../data/categories";
+import { frameworks } from "../data/frameworks";
+import ScenarioSection from "./ScenarioSection.astro";
+import FrameworkSelector from "./FrameworkSelector.astro";
+
+interface SnippetFile {
+  filename: string;
+  language: string;
+  code: string;
+}
+
+interface Props {
+  category: Category;
+  snippets: Array<{
+    data: {
+      categorySlug: string;
+      scenarioSlug: string;
+      frameworkId: string;
+      files: SnippetFile[];
+    };
+  }>;
+  prevCategory?: Category;
+  nextCategory?: Category;
+}
+
+const { category, snippets, prevCategory, nextCategory } = Astro.props;
+
+const grouped: Record<string, Record<string, SnippetFile[]>> = {};
+for (const s of snippets) {
+  const key = s.data.scenarioSlug;
+  if (!grouped[key]) grouped[key] = {};
+  grouped[key][s.data.frameworkId] = s.data.files;
+}
+---
+
+<FrameworkSelector frameworks={frameworks} />
+<div class="p-6 lg:p-8 max-w-6xl mx-auto">
+  <div id="category-header" class="flex items-center justify-between mb-8">
+    <h1 class="text-2xl font-bold">{category.title}</h1>
+    <div class="flex items-center gap-2">
+      {prevCategory && (
+        <a
+          href={categoryUrl(prevCategory.slug)}
+          class="flex items-center justify-center w-8 h-8 rounded border border-[var(--border-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-faint)] transition-colors"
+          aria-label={`Previous: ${prevCategory.title}`}
+          title={prevCategory.title}
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+      )}
+      {nextCategory && (
+        <a
+          href={categoryUrl(nextCategory.slug)}
+          class="flex items-center justify-center w-8 h-8 rounded border border-[var(--border-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-faint)] transition-colors"
+          aria-label={`Next: ${nextCategory.title}`}
+          title={nextCategory.title}
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      )}
+    </div>
+  </div>
+  <div id="empty-state" class="flex flex-col items-center justify-center py-24 text-[var(--text-faint)]">
+    <svg class="w-14 h-14 mb-5 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="9" r="3" fill="currentColor" stroke="none" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M32 12v6" />
+      <rect x="14" y="19" width="36" height="30" rx="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+      <path stroke-linecap="round" stroke-width="3" d="M14 31H9m46 0h-5M22 54v3m20-3v3" />
+      <circle cx="25" cy="31" r="3.5" fill="currentColor" stroke="none" />
+      <circle cx="39" cy="31" r="3.5" fill="currentColor" stroke="none" />
+      <path stroke-linecap="round" stroke-width="3" d="M24 40h16" />
+    </svg>
+    <p class="text-lg font-medium">Select frameworks to compare</p>
+    <p class="text-sm mt-1">Pick one or more frameworks from the bar above</p>
+  </div>
+  {
+    category.scenarios.map((scenario) => (
+      <ScenarioSection
+        scenario={scenario}
+        snippetsByFramework={grouped[scenario.slug] || {}}
+        frameworks={frameworks}
+      />
+    ))
+  }
+  <div id="bottom-nav" class="mt-20 pb-12 flex items-center justify-center gap-2">
+    {prevCategory && (
+      <a
+        href={categoryUrl(prevCategory.slug)}
+        class="flex items-center justify-center w-8 h-8 rounded border border-[var(--border-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-faint)] transition-colors"
+        aria-label={`Previous: ${prevCategory.title}`}
+        title={prevCategory.title}
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+    )}
+    {nextCategory && (
+      <a
+        href={categoryUrl(nextCategory.slug)}
+        class="flex items-center justify-center w-8 h-8 rounded border border-[var(--border-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-faint)] transition-colors"
+        aria-label={`Next: ${nextCategory.title}`}
+        title={nextCategory.title}
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    )}
+  </div>
+</div>

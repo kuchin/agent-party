@@ -1,0 +1,19 @@
+Customer support question
+          │
+          ▼
+   Parent support agent
+          │
+   ┌──────┴────────────┐
+   │                   │
+   ▼                   ▼
+Ticket specialist  Billing specialist
+   │                   │
+   ▼                   ▼
+search_tickets()   lookup_invoices()
+   │                   │
+   └──────┬────────────┘
+          ▼
+ Parent combines findings
+          │
+          ▼
+      Final answer

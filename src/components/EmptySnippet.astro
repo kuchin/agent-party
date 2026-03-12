@@ -1,0 +1,22 @@
+---
+import type { FrameworkDef } from "../data/frameworks";
+
+interface Props {
+  framework: FrameworkDef;
+}
+
+const { framework } = Astro.props;
+---
+
+<div
+  class="max-w-2xl rounded-lg border border-[var(--code-border)] overflow-hidden"
+  style="background: color-mix(in srgb, var(--code-bg) 30%, transparent)"
+  data-framework={framework.id}
+>
+  <div class="flex items-center px-4 py-2 border-b border-[var(--code-border)]">
+    <span class="font-medium text-sm text-[var(--text-faint)]">{framework.name}</span>
+  </div>
+  <div class="p-8 text-center text-[var(--text-faint)] text-sm italic">
+    Not applicable for this framework
+  </div>
+</div>
