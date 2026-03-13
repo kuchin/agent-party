@@ -29,7 +29,9 @@ const getBalance = tool({
   },
 });
 
-// ToolLoopAgent handles multi-step automatically (defaults to 20 steps max)
+// This is the basic ReAct loop:
+// the model calls one tool, sees the result, then decides the next step.
+// ToolLoopAgent runs that loop automatically (defaults to 20 steps max).
 const agent = new ToolLoopAgent({
   model: openai(LLM_MODEL),
   tools: { lookupCustomer, getBalance },

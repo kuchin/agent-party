@@ -23,8 +23,8 @@ def get_balance(customer_id: str) -> str:
     print(f"-> result: {result}")
     return result
 
-# the LLM must call lookup_customer first to get the ID,
-# then pass it to get_balance — a true data dependency
+# this is the basic ReAct pattern:
+# the model must call lookup_customer first, then use that result in get_balance
 result = agent.run_sync("What's the balance for alice@example.com?")
 print(result.output)
 # -> call: lookup_customer(alice@example.com)

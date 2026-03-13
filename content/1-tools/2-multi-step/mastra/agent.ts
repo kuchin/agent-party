@@ -39,8 +39,9 @@ const agent = new Agent({
   tools: { lookupCustomer, getBalance },
 });
 
-// maxSteps controls the ReAct loop iterations (default: 1)
-// without maxSteps > 1, Mastra won't loop back after a tool call
+// This is the basic ReAct loop:
+// the model calls one tool, sees the result, then decides the next step.
+// maxSteps controls how many times Mastra can loop (default: 1).
 const result = await agent.generate(
   "What's the balance for alice@example.com?",
   { maxSteps: 3 },

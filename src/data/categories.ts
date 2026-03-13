@@ -28,7 +28,7 @@ export const categories: Category[] = [
     title: "Tools",
     scenarios: [
       { slug: "1-tool", title: "Tool Call" },
-      { slug: "2-multi-step", title: "Multi-step" },
+      { slug: "2-multi-step", title: "Multi-step / ReAct" },
       { slug: "3-complex-params", title: "Complex Parameters" },
       { slug: "4-tool-error-handling", title: "Tool Error Handling" },
     ],

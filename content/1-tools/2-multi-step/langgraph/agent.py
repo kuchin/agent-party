@@ -25,8 +25,8 @@ def get_balance(customer_id: str) -> str:
     print(f"-> result: {result}")
     return result
 
-# the graph loops: LLM → lookup_customer → LLM → get_balance → LLM
-# each iteration is one "step" in the ReAct cycle
+# this is the basic ReAct loop in graph form:
+# model -> tool -> model -> tool -> model
 agent = create_agent(model, [lookup_customer, get_balance])
 result = agent.invoke({
     "messages": [("user", "What's the balance for alice@example.com?")]

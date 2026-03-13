@@ -53,7 +53,8 @@ input = [{
     "content": "What's the balance for alice@example.com?",
 }]
 
-# ReAct loop: LLM calls tools until it can answer
+# basic ReAct loop:
+# ask the model, run any requested tools, feed the results back, repeat
 while True:
     response = client.responses.create(
         model=LLM_MODEL, input=input, tools=tools,

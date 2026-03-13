@@ -25,7 +25,8 @@ def get_balance(customer_id: str) -> str:
     print(f"-> result: {result}")
     return result
 
-# automatic function calling: SDK runs the ReAct loop for you
+# same ReAct pattern, but Gemini's SDK runs the loop for you:
+# model -> tool call -> tool result -> model
 config = types.GenerateContentConfig(
     tools=[lookup_customer, get_balance],
 )
